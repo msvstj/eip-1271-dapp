@@ -13,7 +13,7 @@ import { ethers } from 'ethers'
 export const App = (): ReactElement => {
   const connector = useWalletConnect()
   const [topic, setTopic] = useState<string>()
-  const [chainId, setChainId] = useState(5)
+  const [chainId, setChainId] = useState(1)
   const [rpcUrl, setRpcUrl] = useState<string>()
   const [safeAddress, setSafeAddress] = useState<string>()
   const [currentChainId, setCurrentChainId] = useState<number>()
@@ -32,6 +32,24 @@ export const App = (): ReactElement => {
     [42161]: 'https://arb1.arbitrum.io/rpc',
     [1313161554]: 'https://mainnet.aurora.dev',
     [43114]: 'https://api.avax.network/ext/bc/C/rpc',
+  }
+
+  const fetchRPC = async (chainId : number | string) => {
+    try {
+      const response = await fetch(
+        `https://raw.githubusercontent.com/ethereum-lists/chains/master/_data/chains/eip155-${chainId}.json`
+      )
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch RPC URL`)
+      }
+
+      const result = await response.json()
+      return result.rpc[0]
+      
+    } catch (error) {
+      console.log(error)
+    }
   }
 
   const rpcProvider = useMemo(() => {
@@ -115,10 +133,11 @@ export const App = (): ReactElement => {
     setMessageHash('')
   }
 
-  const onChangeChainId = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const onChangeChainId = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const newChainId = Number(event.target.value)
     setChainId(newChainId)
-    const newRpcUrl = RPC_MAPPING[newChainId]
+    const newRpcUrl = RPC_MAPPING[newChainId] ?? await fetchRPC(newChainId)
+
     if (newRpcUrl) {
       setRpcUrl(newRpcUrl)
     }
