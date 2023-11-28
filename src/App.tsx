@@ -34,6 +34,10 @@ export const App = (): ReactElement => {
     [43114]: 'https://api.avax.network/ext/bc/C/rpc',
   }
 
+  const isInfura = (chainId : number | string) => {
+    return import.meta.env.INFURA_KEY !== undefined && INFURA_CHAINS.includes(+chainId)
+  }
+
   const fetchRPC = async (chainId : number | string) => {
     try {
       const response = await fetch(
@@ -46,7 +50,7 @@ export const App = (): ReactElement => {
 
       const result = await response.json()
       return result.rpc[0]
-      
+
     } catch (error) {
       console.log(error)
     }
@@ -56,9 +60,8 @@ export const App = (): ReactElement => {
     if (!currentChainId) {
       return
     }
-    const isInfura = import.meta.env.INFURA_KEY !== undefined && INFURA_CHAINS.includes(currentChainId)
 
-    if (isInfura) {
+    if (isInfura(currentChainId)) {
       return new ethers.providers.InfuraProvider(currentChainId, import.meta.env.INFURA_KEY)
     }
 
@@ -136,6 +139,10 @@ export const App = (): ReactElement => {
   const onChangeChainId = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const newChainId = Number(event.target.value)
     setChainId(newChainId)
+
+    // If infura ID is set, do not fetch from chainlist
+    if(isInfura(newChainId)) return
+
     const newRpcUrl = RPC_MAPPING[newChainId] ?? await fetchRPC(newChainId)
 
     if (newRpcUrl) {
